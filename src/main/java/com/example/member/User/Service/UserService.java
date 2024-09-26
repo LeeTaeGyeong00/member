@@ -47,7 +47,7 @@ public class UserService  {
     }
 
     public String login(String userId, String password) {
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findByUserEmail(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + userId));
         boolean isExitUser = exitUserRepository.existsByUserId(userId);
         if (isExitUser) {
@@ -71,28 +71,28 @@ public class UserService  {
 
     public String refreshAccessToken(String refreshToken) {
         if (tokenProvider.validateToken(refreshToken)) {
-            String userId = tokenProvider.getUserIdFromJWT(refreshToken);
+            String userId = tokenProvider.getUserEmailFromJWT(refreshToken);
             return tokenProvider.generateToken(userId);
         } else {
             throw new RuntimeException("Invalid refresh token");
         }
     }
 
-    public User getUserDetails(String userId) {
-        return userRepository.findByUserId(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + userId));
+    public User getUserDetails(String userEmail) {
+        return userRepository.findByUserEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + userEmail));
     }
 
 
     public String updateUser(UserUpdateDTO updateDTO, HttpServletRequest request) {
         String token = tokenProvider.resolveToken(request);
-        String currentUserId = tokenProvider.getUserIdFromJWT(token);
+        String currentUserEmail = tokenProvider.getUserEmailFromJWT(token);
 
-        User user = userRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + currentUserId));
+        User user = userRepository.findByUserEmail(currentUserEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + currentUserEmail));
 
-        if (updateDTO.getUserId() != null) {
-            user.setUserId(updateDTO.getUserId());
+        if (updateDTO.getUserEmail() != null) {
+            user.setUserEmail(updateDTO.getUserEmail());
         }
         if (updateDTO.getUserPw() != null) {
             user.setUserPw(passwordEncoder.encode(updateDTO.getUserPw()));
@@ -109,7 +109,7 @@ public class UserService  {
 
         userRepository.save(user);
 
-        String newAccessToken = tokenProvider.generateToken(user.getUserId());
+        String newAccessToken = tokenProvider.generateToken(user.getUserEmail());
         return newAccessToken;
     }
 
@@ -122,14 +122,14 @@ public class UserService  {
         Optional<User> user = userRepository.findByUserNameAndUserEmail(name, email);
 
         if (user.isPresent()) {
-            String userId = user.get().getUserId();
+            String userId = user.get().getUserEmail();
             emailService.sendEmail(email, "Your User ID", "Your User ID is: " + userId);
         } else {
             throw new IllegalArgumentException("No matching user found");
         }
     }
-    public void resetPasswordByUserIdAndEmail(String userId, String email) {
-        Optional<User> user = userRepository.findByUserIdAndUserEmail(userId, email);
+    public void resetPasswordByUserEmail(String userEmail) {
+        Optional<User> user = userRepository.findByUserEmail(userEmail);
 
         if (user.isPresent()) {
 
@@ -138,7 +138,7 @@ public class UserService  {
             user.get().setUserPw(encodedPassword);
             userRepository.save(user.get());
 
-            emailService.sendEmail(email, "Password Reset", "Your new password is: " + newPassword);
+            emailService.sendEmail(userEmail, "Password Reset", "Your new password is: " + newPassword);
         } else {
             throw new IllegalArgumentException("No matching user found");
         }
@@ -150,13 +150,13 @@ public class UserService  {
         return String.valueOf(randomInt);
     }
 
-    public void deleteUser(String userId) {
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + userId));
+    public void deleteUser(String userEmail) {
+        User user = userRepository.findByUserEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + userEmail));
 
         // 탈퇴한 회원 기록을 ExitUser 테이블에 저장
         ExitUser exitUser = new ExitUser();
-        exitUser.setUserId(user.getUserId());
+//        exitUser.setUserId(user.getUserId());
         exitUser.setUserPw(user.getUserPw());
         exitUser.setUserName(user.getUserName());
         exitUser.setUserEmail(user.getUserEmail());
@@ -171,9 +171,9 @@ public class UserService  {
         userRepository.delete(user);
     }
 
-    public boolean isAdmin(String userId) {
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + userId));
+    public boolean isAdmin(String userEmail) {
+        User user = userRepository.findByUserEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + userEmail));
         return user.getUserRole() == 0; // Assuming 0 is the role for admin
     }
     public List<ExitUser> getAllExitUsers() {

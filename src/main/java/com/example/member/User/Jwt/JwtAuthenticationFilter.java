@@ -50,8 +50,8 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
             String token = header.replace(tokenProvider.getTokenPrefix(), "").trim();
 
             if (tokenProvider.validateToken(token)) {
-                String userId = tokenProvider.getUserIdFromJWT(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
+                String userEmail = tokenProvider.getUserEmailFromJWT(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());

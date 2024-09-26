@@ -20,8 +20,11 @@ public class User {
     @Column(name = "userNo", nullable = false)
     private Long userNo;
 
-    @Column(name = "userId", nullable = false, length = 50)
-    private String userId;
+//    @Column(name = "userId", nullable = false, length = 50)
+//    private String userId;
+
+    @Column(name = "userEmail", nullable = false, length = 80)
+    private String userEmail;
 
     @Column(name = "userPw", nullable = false, length = 200)
     private String userPw;
@@ -29,8 +32,6 @@ public class User {
     @Column(name = "userName", nullable = false, length = 200)
     private String userName;
 
-    @Column(name = "userEmail", nullable = false, length = 80)
-    private String userEmail;
 
     @Column(name = "userPH", nullable = false, length = 15)
     private String userPH;

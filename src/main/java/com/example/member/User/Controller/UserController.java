@@ -70,7 +70,7 @@ public class UserController {
             for (Cookie cookie : cookies) {
                 if ("refreshToken".equals(cookie.getName())) {
                     String refreshToken = cookie.getValue();
-                    String userId = tokenProvider.getUserIdFromJWT(refreshToken);
+                    String userId = tokenProvider.getUserEmailFromJWT(refreshToken);
 
                     // Remove refresh token from DB
                     userService.removeRefreshToken(userId);
@@ -100,11 +100,11 @@ public class UserController {
 
         try {
             // Authenticate user and generate access token
-            String accessToken = userService.login(loginRequest.getUserId(), loginRequest.getUserPw());
+            String accessToken = userService.login(loginRequest.getUserEmail(), loginRequest.getUserPw());
 
             // Generate refresh token and save to DB
-            String refreshToken = userService.generateRefreshToken(loginRequest.getUserId());
-            userService.saveRefreshToken(loginRequest.getUserId(), refreshToken);
+            String refreshToken = userService.generateRefreshToken(loginRequest.getUserEmail());
+            userService.saveRefreshToken(loginRequest.getUserEmail(), refreshToken);
 
             // Set refresh token as HTTP-only cookie
             Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
@@ -182,7 +182,7 @@ public class UserController {
         }
 
         // 3. 토큰에서 사용자 ID 추출
-        String userId = tokenProvider.getUserIdFromJWT(token);
+        String userId = tokenProvider.getUserEmailFromJWT(token);
         System.out.println("유저 ID : "+userId);
         // 4. 사용자 정보 로드
         UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
@@ -239,7 +239,7 @@ public class UserController {
             @ApiResponse(responseCode = "500", description = "잘못된 ID 혹은 Pw")
     })
     public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest) {
-        userService.resetPasswordByUserIdAndEmail(resetPasswordRequest.getUserId(), resetPasswordRequest.getUserEmail());
+        userService.resetPasswordByUserEmail(resetPasswordRequest.getUserEmail());
         return ResponseEntity.ok("Your new password has been sent to your email.");
     }
 
@@ -257,7 +257,7 @@ public class UserController {
     public ResponseEntity<String> deleteUser(HttpServletRequest request) {
         // JWT 토큰에서 userNo 추출
         String token = tokenProvider.resolveToken(request);
-        String userId = tokenProvider.getUserIdFromJWT(token);
+        String userId = tokenProvider.getUserEmailFromJWT(token);
 
         try {
             userService.deleteUser(userId);

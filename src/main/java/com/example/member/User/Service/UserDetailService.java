@@ -27,7 +27,7 @@ public class UserDetailService implements UserDetailsService {
         log.debug("UserRepository is null: {}", userRepository == null);
         System.out.println(username);
         System.out.println(userRepository == null);
-        return userRepository.findByUserId(username)
+        return userRepository.findByUserEmail(username)
                 .map(CustomUserDetails::new)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + username));
     }

@@ -73,7 +73,7 @@ public class TokenProvider {
                 .compact();
     }
 
-    public String getUserIdFromJWT(String token) {
+    public String getUserEmailFromJWT(String token) {
         Claims claims = Jwts.parser()
                 .setSigningKey(secretKey)
                 .parseClaimsJws(token)

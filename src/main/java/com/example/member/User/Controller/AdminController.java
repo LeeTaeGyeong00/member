@@ -30,7 +30,8 @@ public class AdminController {
     private boolean isAdmin(String userId) {
         return userService.isAdmin(userId);
     }
-    @GetMapping("/exit-users")
+
+    @GetMapping("/withdraw-users")
     @Operation(
             summary = "탈퇴한 회원 조회",
             description = "탈퇴한 회원을 전체 조회합니다",
@@ -43,10 +44,10 @@ public class AdminController {
     public ResponseEntity<?> getExitUsers(HttpServletRequest request) {
         // JWT 토큰에서 현재 사용자 ID를 추출
         String token = tokenProvider.resolveToken(request);
-        String currentUserId = tokenProvider.getUserIdFromJWT(token);
+        String currentUserEmail = tokenProvider.getUserEmailFromJWT(token);
 
         // 현재 사용자가 관리자 권한을 가지고 있는지 확인
-        if (!userService.isAdmin(currentUserId)) {
+        if (!userService.isAdmin(currentUserEmail)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You do not have permission to view this resource.");
         }
 
@@ -54,6 +55,7 @@ public class AdminController {
         List<ExitUser> exitUsers = userService.getAllExitUsers(); // Use UserService to fetch exit users
         return ResponseEntity.ok(exitUsers);
     }
+
     @PutMapping("/update-user")
     @Operation(
             summary = "관리자 회원 정보 수정",
@@ -67,10 +69,10 @@ public class AdminController {
     public ResponseEntity<String> adminUpdateUser(@RequestBody UserUpdateDTO updateDTO, @RequestParam String targetUserId, HttpServletRequest request) {
         // JWT 토큰에서 현재 관리자 ID를 추출
         String token = tokenProvider.resolveToken(request);
-        String currentUserId = tokenProvider.getUserIdFromJWT(token);
+        String currentUserEmail = tokenProvider.getUserEmailFromJWT(token);
 
         // 현재 사용자가 관리자인지 확인
-        if (!isAdmin(currentUserId)) {
+        if (!isAdmin(currentUserEmail)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You do not have permission to perform this action.");
         }
 
@@ -92,10 +94,10 @@ public class AdminController {
     public ResponseEntity<String> adminDeleteUser(@RequestParam String targetUserId, HttpServletRequest request) {
         // JWT 토큰에서 현재 관리자 ID를 추출
         String token = tokenProvider.resolveToken(request);
-        String currentUserId = tokenProvider.getUserIdFromJWT(token);
+        String currentUserEmail = tokenProvider.getUserEmailFromJWT(token);
 
         // 현재 사용자가 관리자인지 확인
-        if (!userService.isAdmin(currentUserId)) {
+        if (!userService.isAdmin(currentUserEmail)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You do not have permission to perform this action.");
         }
 
@@ -122,10 +124,10 @@ public class AdminController {
     public ResponseEntity<?> getAllUsers(HttpServletRequest request) {
         // JWT 토큰에서 현재 사용자 ID를 추출
         String token = tokenProvider.resolveToken(request);
-        String currentUserId = tokenProvider.getUserIdFromJWT(token);
+        String currentUserEmail = tokenProvider.getUserEmailFromJWT(token);
 
         // 현재 사용자가 관리자 권한을 가지고 있는지 확인
-        if (!userService.isAdmin(currentUserId)) {
+        if (!userService.isAdmin(currentUserEmail)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You do not have permission to view this resource.");
         }
 
@@ -134,7 +136,7 @@ public class AdminController {
         return ResponseEntity.ok(users);
     }
 
-    @GetMapping("/users/search")
+    @GetMapping("/search-user")
     @Operation(
             summary = "회원 검색",
             description = "회원 검색",
@@ -151,10 +153,10 @@ public class AdminController {
 
         // JWT 토큰에서 현재 사용자 ID를 추출
         String token = tokenProvider.resolveToken(request);
-        String currentUserId = tokenProvider.getUserIdFromJWT(token);
+        String currentUserEmail = tokenProvider.getUserEmailFromJWT(token);
 
         // 현재 사용자가 관리자 권한을 가지고 있는지 확인
-        if (!userService.isAdmin(currentUserId)) {
+        if (!userService.isAdmin(currentUserEmail)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You do not have permission to view this resource.");
         }
 
