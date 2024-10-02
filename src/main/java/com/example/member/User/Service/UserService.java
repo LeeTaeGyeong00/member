@@ -1,6 +1,10 @@
 package com.example.member.User.Service;
 
 
+import com.example.member.Board.Entity.Board;
+import com.example.member.Board.Entity.Like;
+import com.example.member.Board.Repository.BoardRepository;
+import com.example.member.Board.Repository.LikeRepository;
 import com.example.member.User.Dto.UserUpdateDTO;
 import com.example.member.User.Entity.ExitUser;
 import com.example.member.User.Entity.RefreshToken;
@@ -22,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +38,8 @@ public class UserService  {
     private final TokenProvider tokenProvider;
     private final EmailService emailService;
     private final ExitUserRepository exitUserRepository;
-
+    private final BoardRepository boardRepository;
+    private final LikeRepository likeRepository;
 
     @Transactional
     public User registerUser(User user) {
@@ -46,10 +52,10 @@ public class UserService  {
         return userRepository.save(user);
     }
 
-    public String login(String userId, String password) {
-        User user = userRepository.findByUserEmail(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + userId));
-        boolean isExitUser = exitUserRepository.existsByUserId(userId);
+    public String login(String userEmail, String password) {
+        User user = userRepository.findByUserEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + userEmail));
+        boolean isExitUser = exitUserRepository.existsByUserEmail(userEmail);
         if (isExitUser) {
             throw new IllegalArgumentException("This account has been deactivated.");
         }
@@ -58,21 +64,21 @@ public class UserService  {
             throw new RuntimeException("Invalid credentials");
         }
 
-        return tokenProvider.generateToken(userId);
+        return tokenProvider.generateToken(userEmail);
     }
-    public void saveRefreshToken(String userId, String refreshToken) {
-        RefreshToken token = new RefreshToken(userId, refreshToken);
+    public void saveRefreshToken(String userEmail, String refreshToken) {
+        RefreshToken token = new RefreshToken(userEmail, refreshToken);
         refreshTokenRepository.save(token);
     }
 
-    public String generateRefreshToken(String userId) {
-        return tokenProvider.generateRefreshToken(userId);
+    public String generateRefreshToken(String userEmail) {
+        return tokenProvider.generateRefreshToken(userEmail);
     }
 
     public String refreshAccessToken(String refreshToken) {
         if (tokenProvider.validateToken(refreshToken)) {
-            String userId = tokenProvider.getUserEmailFromJWT(refreshToken);
-            return tokenProvider.generateToken(userId);
+            String userEmail = tokenProvider.getUserEmailFromJWT(refreshToken);
+            return tokenProvider.generateToken(userEmail);
         } else {
             throw new RuntimeException("Invalid refresh token");
         }
@@ -113,8 +119,8 @@ public class UserService  {
         return newAccessToken;
     }
 
-    public void removeRefreshToken(String userId) {
-        refreshTokenRepository.deleteByUserId(userId);
+    public void removeRefreshToken(String userEmail) {
+        refreshTokenRepository.deleteByUserEmail(userEmail);
     }
 
     public void findIdByNameAndEmail(String name, String email) {
@@ -122,8 +128,8 @@ public class UserService  {
         Optional<User> user = userRepository.findByUserNameAndUserEmail(name, email);
 
         if (user.isPresent()) {
-            String userId = user.get().getUserEmail();
-            emailService.sendEmail(email, "Your User ID", "Your User ID is: " + userId);
+            String userEmail = user.get().getUserEmail();
+            emailService.sendEmail(email, "Your User ID", "Your User ID is: " + userEmail);
         } else {
             throw new IllegalArgumentException("No matching user found");
         }
@@ -176,8 +182,35 @@ public class UserService  {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with userId: " + userEmail));
         return user.getUserRole() == 0; // Assuming 0 is the role for admin
     }
+
     public List<ExitUser> getAllExitUsers() {
         return exitUserRepository.findAll();
+    }
+    public List<Board> userBoards(HttpServletRequest request) {
+        String token = tokenProvider.resolveToken(request);
+        String currentUserEmail = tokenProvider.getUserEmailFromJWT(token);
+
+        User user = userRepository.findByUserEmail(currentUserEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("회원이 아닙니다." + currentUserEmail));
+        System.out.println("회원 조회"+user);
+        return boardRepository.findByUser(user); // User에 따라 게시판을 조회
+    }
+
+    // 회원이 좋아요를 누른 게시판 조회
+    public List<Board> userLike(HttpServletRequest request) {
+        String token = tokenProvider.resolveToken(request);
+        String currentUserEmail = tokenProvider.getUserEmailFromJWT(token);
+
+        User user = userRepository.findByUserEmail(currentUserEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("회원이 아닙니다." + currentUserEmail));
+        System.out.println("회원 조회"+user);
+        List<Like> likes = likeRepository.findByUser(user); // 사용자에 따른 좋아요 리스트 조회
+        System.out.println("좋아요 조회"+likes);
+        List<Board> likedBoards = likes.stream()
+                .map(Like::getBoard)
+                .collect(Collectors.toList()); // 좋아요가 눌린 게시판 리스트
+
+        return likedBoards;
     }
 
 }

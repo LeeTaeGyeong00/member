@@ -41,11 +41,13 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         String path = httpRequest.getRequestURI();
         String header = httpRequest.getHeader(tokenProvider.getHeaderString());
-
+        System.out.println("필터실행");
         log.debug("JWT Authentication Filter triggered for request: {}", path);
         log.debug("Authorization header: {}", header);
         log.debug("UserDetailsService is null: {}", userDetailsService == null);
-
+        System.out.println("헤더 : "+header);
+        System.out.println("path : "+path);
+        System.out.println("httpRequest : "+httpRequest);
         if (header != null && header.startsWith(tokenProvider.getTokenPrefix())) {
             String token = header.replace(tokenProvider.getTokenPrefix(), "").trim();
 

@@ -1,6 +1,9 @@
 package com.example.member.User.Controller;
 
 
+import com.example.member.Board.Entity.Board;
+import com.example.member.Board.Repository.BoardRepository;
+import com.example.member.Board.Service.BoardService;
 import com.example.member.User.Dto.FindIdRequest;
 import com.example.member.User.Dto.LoginRequest;
 import com.example.member.User.Dto.ResetPasswordRequest;
@@ -99,11 +102,13 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
 
         try {
+            System.out.println("이메일"+loginRequest.getUserEmail() +"비번"+ loginRequest.getUserPw());
             // Authenticate user and generate access token
             String accessToken = userService.login(loginRequest.getUserEmail(), loginRequest.getUserPw());
-
+            System.out.println("액세스 토큰 : "+accessToken);
             // Generate refresh token and save to DB
             String refreshToken = userService.generateRefreshToken(loginRequest.getUserEmail());
+            System.out.println("리프레쉬 토큰 : "+refreshToken);
             userService.saveRefreshToken(loginRequest.getUserEmail(), refreshToken);
 
             // Set refresh token as HTTP-only cookie
@@ -120,7 +125,7 @@ public class UserController {
 
             return ResponseEntity.ok(tokens);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials123");
         }
     }
     // 액세스 토큰 갱신 API
@@ -182,10 +187,10 @@ public class UserController {
         }
 
         // 3. 토큰에서 사용자 ID 추출
-        String userId = tokenProvider.getUserEmailFromJWT(token);
-        System.out.println("유저 ID : "+userId);
+        String userEmail = tokenProvider.getUserEmailFromJWT(token);
+        System.out.println("유저 ID : "+userEmail);
         // 4. 사용자 정보 로드
-        UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
         // 5. 사용자 정보에 따라 비즈니스 로직 실행 (예: 마이페이지 정보 조회)
         User user = userService.getUserDetails(userDetails.getUsername());
@@ -215,19 +220,19 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/find-id")
-    @Operation(
-            summary = "ID 찾기",
-            description = "ID 찾기"
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "ID 이메일 발송 완료"),
-            @ApiResponse(responseCode = "500", description = "잘못된 이름 혹은 이메일")
-    })
-    public ResponseEntity<String> findId(@RequestBody FindIdRequest findIdRequest) {
-        userService.findIdByNameAndEmail(findIdRequest.getUserName(), findIdRequest.getUserEmail());
-        return ResponseEntity.ok("Your User ID has been sent to your email.");
-    }
+//    @PostMapping("/find-id")
+//    @Operation(
+//            summary = "ID 찾기",
+//            description = "ID 찾기"
+//    )
+//    @ApiResponses({
+//            @ApiResponse(responseCode = "200", description = "ID 이메일 발송 완료"),
+//            @ApiResponse(responseCode = "500", description = "잘못된 이름 혹은 이메일")
+//    })
+//    public ResponseEntity<String> findId(@RequestBody FindIdRequest findIdRequest) {
+//        userService.findIdByNameAndEmail(findIdRequest.getUserName(), findIdRequest.getUserEmail());
+//        return ResponseEntity.ok("Your User ID has been sent to your email.");
+//    }
 
     @PostMapping("/reset-password")
     @Operation(
@@ -267,5 +272,35 @@ public class UserController {
         }
     }
 
+    //등록한 게시글 확인
+    @GetMapping("/boards")
+    @Operation(
+            summary = "등록한 게시판 조회",
+            description = "등록한 게시판 조회",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "게시판 조회 성공"),
+            @ApiResponse(responseCode = "403", description = "액세스 토큰이 없습니다.")
+    })
+    public ResponseEntity<List<Board>> userBoards(HttpServletRequest request) {
+        List<Board> boards = userService.userBoards(request);
+        return ResponseEntity.ok(boards);
+    }
+
+    @GetMapping("/board-like")
+    @Operation(
+            summary = "좋아요 누른 게시판 조회",
+            description = "좋아요 누른 게시판 조회",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "좋아요 게시판 조회 성공"),
+            @ApiResponse(responseCode = "403", description = "액세스 토큰이 없습니다.")
+    })
+    public ResponseEntity<List<Board>> userLike(HttpServletRequest request) {
+        List<Board> likedBoards = userService.userLike(request);
+        return ResponseEntity.ok(likedBoards);
+    }
 
 }

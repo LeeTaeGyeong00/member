@@ -73,7 +73,7 @@ public class AdminService {
 
         // 탈퇴한 회원 기록을 ExitUser 테이블에 저장
         ExitUser exitUser = new ExitUser();
-        exitUser.setUserId(user.getUserEmail());
+//        exitUser.setUserId(user.getUserEmail());
         exitUser.setUserPw(user.getUserPw());
         exitUser.setUserName(user.getUserName());
         exitUser.setUserEmail(user.getUserEmail());

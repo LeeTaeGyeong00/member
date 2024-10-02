@@ -32,7 +32,6 @@ public class User {
     @Column(name = "userName", nullable = false, length = 200)
     private String userName;
 
-
     @Column(name = "userPH", nullable = false, length = 15)
     private String userPH;
 

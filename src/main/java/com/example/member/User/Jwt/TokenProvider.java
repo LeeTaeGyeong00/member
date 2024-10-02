@@ -49,24 +49,24 @@ public class TokenProvider {
     @Value("${jwt.refresh-token-header-string}")
     private String refreshTokenHeaderString;
 
-    public String generateToken(String userId) {
+    public String generateToken(String userEmail) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationTime);
 
         return Jwts.builder()
-                .setSubject(userId)
+                .setSubject(userEmail)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(SignatureAlgorithm.HS512, secretKey)
                 .compact();
     }
 
-    public String generateRefreshToken(String userId) {
+    public String generateRefreshToken(String userEmail) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshExpirationTime);
 
         return Jwts.builder()
-                .setSubject(userId)
+                .setSubject(userEmail)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(SignatureAlgorithm.HS512, secretKey)
@@ -88,6 +88,7 @@ public class TokenProvider {
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             log.error("Invalid JWT token", e);
+            System.out.println("Invalid JWT token");
             return false;
         }
     }
@@ -100,4 +101,36 @@ public class TokenProvider {
         return null;
     }
 
+    public Authentication getAuthentication(String token) {
+
+        Claims claims = parseClaims(token);
+
+        // 권한 정보가 있는지 확인
+        if (claims.get("auth") == null) {
+            // 어세스 토큰인 경우에만 권한 정보가 필요하므로 리프레시 토큰일 경우에는 권한 정보가 없다는 예외를 발생시키지 않음
+            return null;
+        }
+
+        // 어세스 토큰인 경우에만 권한 정보 생성
+        Collection<? extends GrantedAuthority> authorities =
+                Arrays.stream(claims.get("auth").toString().split(","))
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+
+        // UserDetails 객체를 만들어서 Authentication 리턴
+        UserDetails principal = new User(claims.getSubject(), "", authorities);
+        return new UsernamePasswordAuthenticationToken(principal, "", authorities);
+    }
+    // claims 정보 가져오기
+    public Claims parseClaims(String accessToken) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(accessToken)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            return e.getClaims();
+        }
+    }
 }

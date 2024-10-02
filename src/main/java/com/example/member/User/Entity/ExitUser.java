@@ -32,9 +32,6 @@ public class ExitUser {
     @Column(name = "exitNo", nullable = false)
     private Long exitNo;
 
-    @Column(name = "userId", nullable = false, length = 50)
-    private String userId;
-
     @Column(name = "userPw", nullable = false, length = 200)
     private String userPw;
 
